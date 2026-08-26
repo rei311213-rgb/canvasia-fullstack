@@ -9,5 +9,5 @@ const templates = [
   { name: 'Business Flyer', category: 'templates', data: { version: 1, width: 760, height: 540, objects: [{ id: 'heading', kind: 'text', text: 'YOUR BUSINESS', x: 90, y: 100, fontSize: 38 }, { id: 'offer', kind: 'text', text: 'Professional announcement', x: 90, y: 180, fontSize: 24 }, { id: 'shape', kind: 'shape', x: 90, y: 260, w: 240, h: 120 }] } },
   { name: 'Social Announcement', category: 'social', data: { version: 1, width: 760, height: 540, objects: [{ id: 'heading', kind: 'text', text: 'BIG ANNOUNCEMENT', x: 100, y: 150, fontSize: 36 }, { id: 'icon', kind: 'icon', text: '✓', x: 350, y: 260, fontSize: 56 }] } }
 ];
-async function main(){ for(const t of templates) await prisma.template.upsert({where:{name:t.name},update:{category:t.category,data:t.data},create:t}); }
+async function main(){ for(const t of templates){ const existing=await prisma.template.findFirst({where:{name:t.name}}); if(existing){ await prisma.template.update({where:{id:existing.id},data:{category:t.category,data:t.data}}); }else{ await prisma.template.create({data:t}); } } }
 main().finally(()=>prisma.$disconnect());

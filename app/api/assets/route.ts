@@ -1,4 +1,84 @@
-import { NextResponse } from 'next/server'; import { z } from 'zod'; import { getCurrentUser } from '@/lib/auth'; import { prisma } from '@/lib/prisma';
-const schema=z.object({name:z.string().trim().min(1).max(120),category:z.string().trim().min(1).max(60),imageUrl:z.string().url().or(z.string().startsWith('data:image/')).max(4_000_000)});
-export async function GET(req:Request){const user=await getCurrentUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});const q=(new URL(req.url).searchParams.get('q')||'').trim();const assets=await prisma.asset.findMany({where:{OR:[{userId:user.id},{userId:null}],...(q?{name:{contains:q,mode:'insensitive'}}:{})},orderBy:{createdAt:'desc'}});return NextResponse.json(assets);}
-export async function POST(req:Request){const user=await getCurrentUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});const parsed=schema.safeParse(await req.json());if(!parsed.success)return NextResponse.json({error:'Invalid asset'},{status:400});const asset=await prisma.asset.create({data:{...parsed.data,userId:user.id}});return NextResponse.json(asset,{status:201});}
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { getCurrentUser } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+const schema = z.object({
+  name: z.string().trim().min(1).max(120),
+  category: z.string().trim().min(1).max(60),
+  imageUrl: z
+    .union([
+      z.string().url(),
+      z.string().startsWith('data:image/'),
+    ])
+    .refine(
+      (value) => value.length <= 4_000_000,
+      { message: 'Image URL too long' }
+    ),
+});
+
+export async function GET(req: Request) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  const q = (
+    new URL(req.url).searchParams.get('q') || ''
+  ).trim();
+
+  const assets = await prisma.asset.findMany({
+    where: {
+      OR: [
+        { userId: user.id },
+        { userId: null },
+      ],
+      ...(q
+        ? {
+            name: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return NextResponse.json(assets);
+}
+
+export async function POST(req: Request) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  const parsed = schema.safeParse(await req.json());
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid asset' },
+      { status: 400 }
+    );
+  }
+
+  const asset = await prisma.asset.create({
+    data: {
+      ...parsed.data,
+      userId: user.id,
+    },
+  });
+
+  return NextResponse.json(asset, { status: 201 });
+}

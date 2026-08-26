@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth';
@@ -27,8 +28,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!parsed.success) return NextResponse.json({ error: 'Invalid project' }, { status: 400 });
   const existing = await prisma.project.findFirst({ where: { id, userId: user.id } });
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (parsed.data.data) { await prisma.projectVersion.create({ data: { projectId: id, data: parsed.data.data } }); }
-  const project = await prisma.project.update({ where: { id }, data: parsed.data });
+  if (parsed.data.data) { await prisma.projectVersion.create({ data: { projectId: id, data: parsed.data.data as Prisma.InputJsonValue } }); }
+  const { data: rawData, ...projectFields } = parsed.data;
+  const updateData = { ...projectFields, ...(rawData !== undefined ? { data: rawData as Prisma.InputJsonValue } : {}) };
+  const project = await prisma.project.update({ where: { id }, data: updateData });
   return NextResponse.json(project);
 }
 
