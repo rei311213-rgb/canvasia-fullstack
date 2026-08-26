@@ -1,0 +1,5 @@
+'use client';
+import { FormEvent, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+export default function Register(){const [error,setError]=useState('');const router=useRouter();async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError('');const body=Object.fromEntries(new FormData(e.currentTarget));const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok) router.push('/dashboard'); else setError((await r.json()).error||'Registration failed');}return <main className="page"><form className="card" onSubmit={submit}><h1>Create your Canvasia account</h1><div className="field"><label>Name</label><input name="name" /></div><div className="field"><label>Email</label><input name="email" type="email" required /></div><div className="field"><label>Password</label><input name="password" type="password" minLength={8} required /></div>{error&&<p>{error}</p>}<button className="button">Create account</button><p className="muted">Already registered? <Link href="/login">Sign in</Link></p></form></main>}

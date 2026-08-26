@@ -1,0 +1,6 @@
+import { NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
+import { getCurrentUser } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){const user=await getCurrentUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});const {id}=await params;const p=await prisma.project.findFirst({where:{id,userId:user.id}});if(!p)return NextResponse.json({error:'Not found'},{status:404});let share=await prisma.projectShare.findFirst({where:{projectId:id}});if(share){share=await prisma.projectShare.update({where:{id:share.id},data:{enabled:true}})}else{share=await prisma.projectShare.create({data:{projectId:id,token:randomBytes(24).toString('hex')}})}return NextResponse.json({token:share.token,url:`/share/${share.token}`});}
+export async function DELETE(_req:Request,{params}:{params:Promise<{id:string}>}){const user=await getCurrentUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});const {id}=await params;const p=await prisma.project.findFirst({where:{id,userId:user.id}});if(!p)return NextResponse.json({error:'Not found'},{status:404});await prisma.projectShare.updateMany({where:{projectId:id},data:{enabled:false}});return NextResponse.json({ok:true});}

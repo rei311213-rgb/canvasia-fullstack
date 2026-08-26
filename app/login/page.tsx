@@ -1,0 +1,5 @@
+'use client';
+import { FormEvent, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+export default function Login(){const [error,setError]=useState('');const router=useRouter();async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError('');const body=Object.fromEntries(new FormData(e.currentTarget));const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok) router.push('/dashboard'); else setError((await r.json()).error||'Login failed');}return <main className="page"><form className="card" onSubmit={submit}><h1>Welcome to Canvasia</h1><p className="muted">Sign in to your creative workspace.</p><div className="field"><label>Email</label><input name="email" type="email" required /></div><div className="field"><label>Password</label><input name="password" type="password" required /></div>{error&&<p>{error}</p>}<button className="button">Sign in</button><p className="muted">No account? <Link href="/register">Create one</Link></p></form></main>}
